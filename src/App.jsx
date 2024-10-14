@@ -6,6 +6,7 @@ import Feedback from "./pages/Feedback";
 import NotFound from "./pages/NotFound";
 import { Analytics } from "@vercel/analytics/react";
 
+
 function App() {
   return (
     <>

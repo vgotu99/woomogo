@@ -6,11 +6,9 @@ import { typeData } from "../components/typeData";
 import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import html2canvas from "html2canvas";
-import { saveAs } from "file-saver";
 import { useRef } from "react";
 import { db } from "../../Auth - Do Not Upload/firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { initializeKakao } from "../../Auth - Do Not Upload/kakao";
 
 const Result = () => {
   const nav = useNavigate();
@@ -43,7 +41,6 @@ const Result = () => {
         console.error("Error fetching document: ", error);
       }
     };
-    initializeKakao();
     fetchData();
   }, [type]);
 
@@ -54,52 +51,32 @@ const Result = () => {
 
   const filteredTypeData = typeData.filter((data) => data.type === type);
 
-  const handleSaveImage = () => {
-    const resultSaveBox = resultSaveBoxRef.current;
+  const handleShareImage = async () => {
+    try {
+      const resultSaveBox = resultSaveBoxRef.current;
 
-    html2canvas(resultSaveBox)
-      .then((canvas) => {
-        if (typeof canvas.toBlob === "function") {
-          canvas.toBlob((blob) => {
-            saveAs(blob, `우모고_${type}타입.png`);
-          }, "image/png");
+      const canvas = await html2canvas(resultSaveBox);
+
+      canvas.toBlob(async (blob) => {
+        const file = new File([blob], `우모고_${type}타입.png`, {
+          type: "image/png",
+        });
+
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              files: [file],
+            });
+          } catch (error) {
+            console.error("이미지 공유 실패: ", error);
+          }
         } else {
-          const dataUrl = canvas.toDataURL("image/png");
-          const link = document.createElement("a");
-          link.href = dataUrl;
-          link.download = `우모고_${type}타입.png`;
-          link.click();
+          alert("이 브라우저에서는 공유 기능이 지원되지 않습니다.");
         }
-      })
-      .catch((error) => {
-        console.error("html2canvas 처리 실패:", error);
       });
-  };
-
-  const handleShareImage = () => {
-    console.log(type)
-    window.Kakao.Link.sendDefault({
-      objectType: "feed",
-      content: {
-        title: "우모고 | 우리는 모두 고양이였다",
-        description:
-          "우리는 모두 고양이였다는 사실!!\n과거 냥생 시절 모습을 확인해보세요!",
-        imageUrl: `https://github.com/vgotu99/woomogo/blob/main/kakaoLink_img/result_${type}.png?raw=true`,
-        link: {
-          mobileWebUrl: "https://woomogo.vercel.app",
-          webUrl: "https://woomogo.vercel.app",
-        },
-      },
-      buttons: [
-        {
-          title: "나의 과거 냥생 확인하기",
-          link: {
-            mobileWebUrl: "https://woomogo.vercel.app",
-            webUrl: "https://woomogo.vercel.app",
-          },
-        },
-      ],
-    });
+    } catch (error) {
+      console.error("html2canvas 오류: ", error);
+    }
   };
 
   const validType = "ABCDEFGHIJKLMNOP".split("");
@@ -149,14 +126,9 @@ const Result = () => {
       </div>
       <p className="border"></p>
       <Button
-        onClick={handleSaveImage}
-        type={"main"}
-        text={"이미지로 결과 저장하기"}
-      />
-      <Button
         onClick={handleShareImage}
         type={"main"}
-        text={"카톡으로 결과 공유하기"}
+        text={"결과 공유 및 저장하기"}
       />
     </div>
   );
